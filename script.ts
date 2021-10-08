@@ -15,11 +15,11 @@ class GameDisplay{
         this.canvas.canvas.addEventListener("click",(e:MouseEvent)=>this.onMouseDown(e.clientX,e.clientY));
         window.addEventListener("keypress",(e:KeyboardEvent)=>this.onKeyPressed(e.keyCode));
         window.addEventListener("resize",_=>this.canvas.resizeToWindow());
-        Canvas.createAnimation((...args)=>this.paint(...args));
+        Canvas.createAnimation(_=>this.paint());
     }
 
     //Called every time the display needs to update
-    public paint(currTime:number,elapsedTime:number):void{
+    public paint():void{
 
         //Recalculate dimensions
         const WIDTH = this.canvas.width, HEIGHT = this.canvas.height;
@@ -62,11 +62,17 @@ class GameDisplay{
         }
     }
 
-    public alertWin():void{
-        alert("You Win!");
+    public onWin():void{
+        document.getElementById("game-result").dataset.result = "win";
+        document.getElementById("game-result").onclick = (e =>{if(e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard()});
     }
-    public alertLose():void{
-        alert("You Lose!");
+    public onLose():void{
+        document.getElementById("game-result").dataset.result = "lose";
+        document.getElementById("game-result").onclick = (e =>{if(e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard()});
+    }
+    public onDraw():void{
+        document.getElementById("game-result").dataset.result = "draw";
+        document.getElementById("game-result").onclick = (e =>{if(e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard()});
     }
 
     public onKeyPressed(keyCode:number):void{
@@ -109,22 +115,36 @@ class GameLogic{
 
     private playerMove(x:number, y:number) {
         this.board[x][y] = BOARD_CELL.PLAYER;
-        if(this.gameWon() == 1){
-            this.display.alertWin();
-            this.resetBoard();
+        this.display.paint();
+
+        switch(this.gameWon()){
+            case 1:
+                this.display.onWin();
+                break;
+            case 3:
+                this.display.onDraw();
+                break;
         }
+
         this.opponentMove();
     }
 
     private opponentMove(){
         this.opponent.move();
-        if(this.gameWon() == 2){
-            this.display.alertLose();
-            this.resetBoard();
+        this.display.paint();
+
+        switch(this.gameWon()){
+            case 2:
+                this.display.onLose();
+                break;
+            case 3:
+                this.display.onDraw();
+                break;
         }
+        
     }
 
-    private resetBoard():void{
+    public resetBoard():void{
         this.board = new Array(GameLogic.BOARD_SIZE).fill(0).map(i=>new Array(GameLogic.BOARD_SIZE).fill(BOARD_CELL.EMPTY));
     }
 
@@ -137,7 +157,7 @@ class GameLogic{
             || /.*OOOOO.*/.test(this.getCols())
             || /.*OOOOO.*/.test(this.getDiagonals(false))
             || /.*OOOOO.*/.test(this.getDiagonals(true))
-        ? 2: 0;
+        ? 2: this.isFull() ? 3 : 0;
     }
 
     public getPieceAt(x:number, y:number):BOARD_CELL{return this.board[x][y];}
@@ -145,6 +165,10 @@ class GameLogic{
     public setPieceAt(o:ComputerOpponent,x:number, y:number, val:BOARD_CELL){if(o == this.opponent) this.board[x][y] = val;}
     public isEmpty():boolean{
         for(let i of this.board) for(let j of i) if(j !=  BOARD_CELL.EMPTY) return false;
+        return true;
+    }
+    public isFull():boolean{
+        for(let i of this.board) for(let j of i) if(j == BOARD_CELL.EMPTY) return false;
         return true;
     }
 
@@ -278,7 +302,7 @@ class ComputerOpponent{
 		//For each regex
 		for(let a of ComputerOpponent.SCORING_MAP.entries()){
 			//Multiply by score per match * number of matches
-			score += s.match(a[0]).length * a[1];
+			score += (s.match(a[0]) || {length:0}).length * a[1];
 		}
 		//Return total score
 		return score;
