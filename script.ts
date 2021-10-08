@@ -210,45 +210,45 @@ class ComputerOpponent{
 
     static SCORING_MAP = new Map<RegExp,number>([
         //Guaranteed win for computer immediately
-            [/OOOOO/, 1000000000],
+            [/OOOOO/g, 1000000000],
         //Guaranteed win for player in 1 moves
-            [/XXXX_/, -100000000],
-            [/XXX_X/, -100000000],
-            [/XX_XX/, -100000000],
-            [/X_XXX/, -100000000],
-            [/_XXXX/, -100000000],
+            [/XXXX_/g, -100000000],
+            [/XXX_X/g, -100000000],
+            [/XX_XX/g, -100000000],
+            [/X_XXX/g, -100000000],
+            [/_XXXX/g, -100000000],
         //Guaranteed win for computer in 2 moves
-            [/_OOOO_/,  20000000],
+            [/_OOOO_/g,  20000000],
         //Possible win for computer in 2 moves
-            [/OOO_O/, 10000000],
-            [/OO_OO/, 10000000],
-            [/O_OOO/, 10000000],
-            [/_OOOO/, 10000000],
+            [/OOO_O/g, 10000000],
+            [/OO_OO/g, 10000000],
+            [/O_OOO/g, 10000000],
+            [/_OOOO/g, 10000000],
         //Possible win for player in 3 moves
-            [/_XXX__/,-1000000],
-            [/__XXX_/,-1000000],
-            [/_XX_X_/,-1000000],
-            [/_X_XX_/,-1000000],
-            [/_XXX_/,-500000],
+            [/_XXX__/g,-1000000],
+            [/__XXX_/g,-1000000],
+            [/_XX_X_/g,-1000000],
+            [/_X_XX_/g,-1000000],
+            [/_XXX_/g,-500000],
         //Possible win for computer in 4 moves
-            [/_OOO__/, 100000],
-            [/__OOO_/, 100000],
-            [/_OO_O_/, 100000],
-            [/_O_OO_/, 100000],
-            [/_OOO_/, 50000],
+            [/_OOO__/g, 100000],
+            [/__OOO_/g, 100000],
+            [/_OO_O_/g, 100000],
+            [/_O_OO_/g, 100000],
+            [/_OOO_/g, 50000],
         //Good moves for computer
-            [/__OO__/, 1200],
-            [/_OO__/, 1000],
-            [/__OO_/, 1000],
-            [/XXO_/, 500],
-            [/_OXX/, 500],
+            [/__OO__/g, 1200],
+            [/_OO__/g, 1000],
+            [/__OO_/g, 1000],
+            [/XXO_/g, 500],
+            [/_OXX/g, 500],
         //Barely disatvantageous situations for computer
-            [/__XX_/, -1100],
-            [/_XX__/, -1100],
-            [/OXO/, -100],
+            [/__XX_/g, -1100],
+            [/_XX__/g, -1100],
+            [/OXO/g, -100],
         //Don't go in random places
-            [/OX/, 1],
-            [/XO/, 1]
+            [/OX/g, 1],
+            [/XO/g, 1]
     ]);
     
     constructor(logic:GameLogic){this.logic = logic}
