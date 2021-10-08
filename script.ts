@@ -2,6 +2,83 @@ class Pair<T1,T2>{public first:T1; public second:T2; constructor(first:T1,second
 
 class GameDisplay{
 	
+    private logic:GameLogic;
+    private SIZE = 800;
+    private LEFT_OFFSET = 0;
+    private TOP_OFFSET = 0;
+
+    private canvas:Canvas;
+
+    constructor(){
+        this.logic = new GameLogic(this);
+        this.canvas = new Canvas(0, 0, document.body);
+        this.canvas.canvas.addEventListener("click",(e:MouseEvent)=>this.onMouseDown(e.clientX,e.clientY));
+        window.addEventListener("keypress",(e:KeyboardEvent)=>this.onKeyPressed(e.keyCode));
+        window.addEventListener("resize",_=>this.canvas.resizeToWindow());
+        Canvas.createAnimation((...args)=>this.paint(...args));
+    }
+
+    //Called every time the display needs to update
+    public paint(currTime:number,elapsedTime:number):void{
+
+        //Recalculate dimensions
+        const WIDTH = this.canvas.width, HEIGHT = this.canvas.height;
+        const SIZE = this.SIZE = Math.min(WIDTH,HEIGHT);
+        const LEFT_OFFSET = this.LEFT_OFFSET = (WIDTH - SIZE) >> 1, TOP_OFFSET = this.TOP_OFFSET = (HEIGHT - SIZE) >> 1;
+
+        const BOARD_SIZE = GameLogic.BOARD_SIZE;
+        const PIECE_RAD = ~~(SIZE / BOARD_SIZE / 2);
+
+        //Paint board background
+        this.canvas.clear("#000");
+        this.canvas.setFillColor("rgb(200,200,200)");
+        this.canvas.fillRect(LEFT_OFFSET, TOP_OFFSET, LEFT_OFFSET + SIZE, TOP_OFFSET + SIZE);
+
+        this.canvas.setDrawColor("#000");
+
+        //Draw grid
+        for(let i = 0; i <= BOARD_SIZE; i++){
+            const offset =  i * SIZE / BOARD_SIZE;
+            this.canvas.line(LEFT_OFFSET, TOP_OFFSET + offset, WIDTH - LEFT_OFFSET, TOP_OFFSET + offset);
+            this.canvas.line(LEFT_OFFSET + offset, TOP_OFFSET, LEFT_OFFSET + offset, HEIGHT - TOP_OFFSET);
+        }
+
+        const PADDING = ~~(SIZE / BOARD_SIZE / 9);
+        //Draw pieces
+        for(let i = 0; i < GameLogic.BOARD_SIZE; i++){
+            for(let j = 0; j < GameLogic.BOARD_SIZE; j++){
+                const circleX = LEFT_OFFSET + i * SIZE / BOARD_SIZE;
+                const circleY = TOP_OFFSET  + j * SIZE / BOARD_SIZE;
+                
+                switch(this.logic.getPieceAt(i, j)){
+                    case BOARD_CELL.PLAYER:
+                        this.canvas.circle(circleX + PIECE_RAD, circleY + PIECE_RAD, PIECE_RAD - PADDING);
+                        break;
+                    case BOARD_CELL.OPPONENT:
+                        this.canvas.fillCircle(circleX + PIECE_RAD, circleY + PIECE_RAD, PIECE_RAD - PADDING);
+                        break;
+                }
+            }
+        }
+    }
+
+    public alertWin():void{
+        alert("You Win!");
+    }
+    public alertLose():void{
+        alert("You Lose!");
+    }
+
+    public onKeyPressed(keyCode:number):void{
+        this.logic.onKey(keyCode);
+    }
+
+    public onMouseDown(x:number, y:number) {
+        this.logic.click(
+            ~~(GameLogic.BOARD_SIZE * (x - this.LEFT_OFFSET) / this.SIZE),
+            ~~(GameLogic.BOARD_SIZE * (y - this.TOP_OFFSET) / this.SIZE)
+        );
+    }
 }
 
 
@@ -11,105 +88,97 @@ class GameLogic{
 
     public static get BOARD_SIZE():number{return 13};
 
-    private board:BOARD_CELL[][] = new Array(GameLogic.BOARD_SIZE).fill(0).map(i=>new Array(GameLogic.BOARD_SIZE).fill(BOARD_CELL.EMPTY));
+    private board:BOARD_CELL[][];
+    private opponent:ComputerOpponent;
 
-    private final ComputerOpponent opponent;
-
-    public GameLogic(GameDisplay disp){
-        opponent = new ComputerOpponent(this);
-        display = disp;
-        resetBoard();
+    constructor(disp:GameDisplay){
+        this.opponent = new ComputerOpponent(this);
+        this.display = disp;
+        this.resetBoard();
     }
 
 
-    public void onKey(int keycode){
-        if(keycode == KeyEvent.VK_R){
-            resetBoard();
-            display.repaint();
+    public onKey(keycode:number){
+        if(keycode == 82) this.resetBoard() //If r pressed, reset game
+    }
+
+    public click(x:number, y:number):void{
+        if(x < 0 || x >= GameLogic.BOARD_SIZE || y < 0 || y >= GameLogic.BOARD_SIZE || this.board[x][y] != BOARD_CELL.EMPTY) return;
+        this.playerMove(x, y);
+    }
+
+    private playerMove(x:number, y:number) {
+        this.board[x][y] = BOARD_CELL.PLAYER;
+        if(this.gameWon() == 1){
+            this.display.alertWin();
+            this.resetBoard();
+        }
+        this.opponentMove();
+    }
+
+    private opponentMove(){
+        this.opponent.move();
+        if(this.gameWon() == 2){
+            this.display.alertLose();
+            this.resetBoard();
         }
     }
 
-    public void click(int x, int y) {
-        if(x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE || board[x][y] != BOARD_CELL.EMPTY) return;
-        playerMove(x, y);
+    private resetBoard():void{
+        this.board = new Array(GameLogic.BOARD_SIZE).fill(0).map(i=>new Array(GameLogic.BOARD_SIZE).fill(BOARD_CELL.EMPTY));
     }
 
-    private void playerMove(int x, int y) {
-        board[x][y] = BOARD_CELL.PLAYER;
-        if(gameWon() == 1){
-            display.alertWin();
-            resetBoard();
-        }
-        display.repaint();
-        opponentMove();
-    }
-
-    private void opponentMove(){
-        opponent.move();
-        if(gameWon() == 2){
-            display.alertLose();
-            resetBoard();
-        }
-        display.repaint();
-    }
-
-    private void resetBoard() {
-        for(var i : board) java.util.Arrays.fill(i,BOARD_CELL.EMPTY);
-    }
-
-    public int gameWon(){
-        return getRows().matches(".*XXXXX.*")
-            || getCols().matches(".*XXXXX.*")
-            || getDiagonals(false).matches(".*XXXXX.*")
-            || getDiagonals(true ).matches(".*XXXXX.*")
-        ? 1 :  getRows().matches(".*OOOOO.*")
-            || getCols().matches(".*OOOOO.*")
-            || getDiagonals(false).matches(".*OOOOO.*")
-            || getDiagonals(true ).matches(".*OOOOO.*")
+    public gameWon():number{
+        return /.*XXXXX.*/.test(this.getRows())
+            || /.*XXXXX.*/.test(this.getCols())
+            || /.*XXXXX.*/.test(this.getDiagonals(false))
+            || /.*XXXXX.*/.test(this.getDiagonals(true))
+        ? 1 :  /.*OOOOO.*/.test(this.getRows())
+            || /.*OOOOO.*/.test(this.getCols())
+            || /.*OOOOO.*/.test(this.getDiagonals(false))
+            || /.*OOOOO.*/.test(this.getDiagonals(true))
         ? 2: 0;
     }
 
-    public BOARD_CELL getPieceAt(int x, int y){return board[x][y];}
-    public boolean hasPieceAt(int x, int y){return board[x][y] != BOARD_CELL.EMPTY;}
-    public void setPieceAt(ComputerOpponent o,int x, int y, BOARD_CELL val){if(o == opponent) board[x][y] = val;}
-    public boolean isEmpty(){
-        for(var i : board) for(var j : i) if(j !=  BOARD_CELL.EMPTY) return false;
+    public getPieceAt(x:number, y:number):BOARD_CELL{return this.board[x][y];}
+    public hasPieceAt(x:number, y:number):boolean{return this.board[x][y] != BOARD_CELL.EMPTY;}
+    public setPieceAt(o:ComputerOpponent,x:number, y:number, val:BOARD_CELL){if(o == this.opponent) this.board[x][y] = val;}
+    public isEmpty():boolean{
+        for(let i of this.board) for(let j of i) if(j !=  BOARD_CELL.EMPTY) return false;
         return true;
     }
 
-    private static final Map<BOARD_CELL,Character> m = Util.toMap(new Object[][] {{BOARD_CELL.EMPTY,"_"},{BOARD_CELL.PLAYER,"X"},{BOARD_CELL.OPPONENT,"O"},});
-	public String getDiagonals(boolean direction){
-		StringBuilder res = new StringBuilder();
-		int i,j,x,y,l = BOARD_SIZE;
+    private static m = new Map<BOARD_CELL,string>([[BOARD_CELL.EMPTY,"_"],[BOARD_CELL.PLAYER,"X"],[BOARD_CELL.OPPONENT,"O"]]);
+
+	public getDiagonals(direction:boolean):string{
+		let res = "",i:number,j:number,x:number,y:number,l = GameLogic.BOARD_SIZE;
 		for (i = l - 1; i > 0; i--) {
 			for (j = 0, x = i; x < l; j++, x++)
-				res.append(m.get(board[direction ? l - x - 1 : x][j]));
-			res.append('|');
+				res += GameLogic.m.get(this.board[direction ? l - x - 1 : x][j]);
+			res += "|";
 		}
 		for (i = 0; i < l; i++) {
 			for (j = 0, y = i; y < l; j++, y++)
-				res.append(m.get(board[direction ? l - j - 1 : j][y]));
-			res.append('|');
+				res += GameLogic.m.get(this.board[direction ? l - j - 1 : j][y]);
+			res += "|";
+		}
+		return res;
+	}
+	public getRows():string{
+		let res = "",i:number,j:number,l = GameLogic.BOARD_SIZE;
+		for(i = 0; i < l; i++){
+			for(j = 0; j < l; j++) res += GameLogic.m.get(this.board[i][j]);
+			res += '|';
 		}
 		return res.toString();
 	}
-	public String getRows(){
-		var res = new StringBuilder();
-		int i,j,l = BOARD_SIZE;
+	public getCols():string{
+		let res = "",i:number,j:number,l = GameLogic.BOARD_SIZE;
 		for(i = 0; i < l; i++){
-			for(j = 0; j < l; j++) res.append(m.get(board[i][j]));
-			res.append('|');
+			for(j = 0; j < l; j++) res += GameLogic.m.get(this.board[j][i]);
+			res += '|';
 		}
-		return res.toString();
-	}
-	public String getCols(){
-		var res = new StringBuilder();
-		int i,j,l = BOARD_SIZE;
-		for(i = 0; i < l; i++){
-			for(j = 0; j < l; j++) res.append(m.get(board[j][i]));
-			res.append('|');
-		}
-		return res.toString();
+		return res;
 	}
 }
 class ComputerOpponent{
@@ -165,57 +234,55 @@ class ComputerOpponent{
 
 		//If board is empty, go in middle space
 		if(this.logic.isEmpty()){
-			this.logic.setPieceAt(this, l / 2, l / 2, GameLogic.BOARD_CELL.OPPONENT); return;
+			this.logic.setPieceAt(this, l / 2, l / 2, BOARD_CELL.OPPONENT); return;
 		}
 
 		//Store best moves & score so far
-		List<Util.Pair<Integer,Integer>> bestMoves = new ArrayList<>();
-		int bestScore = Integer.MIN_VALUE;
+		let bestMoves:Pair<number,number>[] = [];
+		let bestScore = Number.NEGATIVE_INFINITY;
 
 		//For every empty space on the board
-		for(int i = 0; i < l; i++) for(int j = 0; j < l; j++){
-			if(logic.hasPieceAt(i, j)) continue;
+		for(let i = 0; i < l; i++) for(let j = 0; j < l; j++){
+			if(this.logic.hasPieceAt(i, j)) continue;
 
 			//Set the space to 2 for now
-			logic.setPieceAt(this, i, j, GameLogic.BOARD_CELL.OPPONENT);
+			this.logic.setPieceAt(this, i, j, BOARD_CELL.OPPONENT);
 
 			//See how advantageous the board is
-			int score = score();
+			let score = this.score();
 
 			//If it is better than the current best board(s), set it to the new best board
 			if(score > bestScore){
-				bestMoves.clear();
-				bestMoves.add(new Util.Pair<>(i, j));
+				bestMoves = [new Pair<number,number>(i,j)];
 				bestScore = score;
 			}
 			//Otherwise, if it's just as good as the best board(s), add it the set of best boards
-			else if(score == bestScore) bestMoves.add(new Util.Pair<>(i, j));
+			else if(score == bestScore) bestMoves.push(new Pair<number,number>(i,j));
 
 			//Reset the space to 0
-			logic.setPieceAt(this, i, j, GameLogic.BOARD_CELL.EMPTY);
+			this.logic.setPieceAt(this, i, j, BOARD_CELL.EMPTY);
 		}
 
 		//Find a random move out of the best moves
-		var move = bestMoves.get((int)(Math.random() * bestMoves.size()));
+		var move = bestMoves[~~(Math.random() * bestMoves.length)];
 
 		//Carry out the move
-		logic.setPieceAt(this, move.first, move.second, GameLogic.BOARD_CELL.OPPONENT);
+		this.logic.setPieceAt(this, move.first, move.second, BOARD_CELL.OPPONENT);
 	}
 
 	//Find out how advantageous a given board configuration is
-    public int score(){
-		int score = 0;
+    public score():number{
+		let score = 0;
 		//All rows/columns/diagonals of the board, converted to a string and joined with '|'s
-		String s = logic.getRows() + logic.getCols() + logic.getDiagonals(true) + logic.getDiagonals(false);
+		let s:string = this.logic.getRows() + this.logic.getCols() + this.logic.getDiagonals(true) + this.logic.getDiagonals(false);
 		//For each regex
-		for(Map.Entry<String,Integer> a: SCORING_MAP.entrySet()){
-			//Count occurrences of each regex
-			int count = 0;
-			for(char c: s.replaceAll(a.getKey(), "!").toCharArray()) if(c == '!') count++;
-			//Multiply by score per match
-			score += count * a.getValue();
+		for(let a of ComputerOpponent.SCORING_MAP.entries()){
+			//Multiply by score per match * number of matches
+			score += s.match(a[0]).length * a[1];
 		}
 		//Return total score
 		return score;
     }
 }
+
+new GameDisplay();
