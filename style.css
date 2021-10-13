@@ -1,19 +1,15 @@
-body{overflow:hidden}
+body{--width:0;--height:0;}
 
 canvas{
 	position:absolute;top:0;left:0;z-index:0;
 }
 div#game-result{
-	/* display:none; */
 	position:absolute;top:0;left:0;z-index:1;
-
-	width:100vw;height:100vw;
-
+	width:var(--width);height:var(--height);
 	color:white;
 	font-family:monospace;
-	font-size: min(5vh,5vw);
+	font-size: calc(min(var(--width) * .05,var(--height) * .05));
 	text-align:center;
-	
 }
 
 div#game-result[data-result="null"]{display:none;}

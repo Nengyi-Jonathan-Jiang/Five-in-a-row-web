@@ -510,9 +510,15 @@ class GameDisplay {
         this.TOP_OFFSET = 0;
         this.logic = new GameLogic(this);
         this.canvas = new Canvas(0, 0, document.body);
-        this.canvas.canvas.addEventListener("click", (e) => this.onMouseDown(e.clientX, e.clientY));
-        window.addEventListener("keypress", (e) => this.onKeyPressed(e.keyCode));
-        window.addEventListener("resize", _ => this.canvas.resizeToWindow());
+        this.canvas.canvas.onclick = e => this.onMouseDown(e.clientX, e.clientY);
+        window.onkeypress = e => this.onKeyPressed(e.keyCode);
+        window.onresize = _ =>{
+            this.canvas.resizeToWindow();
+            document.body.style.setProperty('--width' ,this.canvas.width  + "px");
+            document.body.style.setProperty('--height',this.canvas.height + "px");
+        };
+        window.onresize();
+
         Canvas.createAnimation(_ => this.paint());
     }
     //Called every time the display needs to update
@@ -777,5 +783,5 @@ ComputerOpponent.SCORING_MAP = new Map([
     [/OX/g, 1],
     [/XO/g, 1]
 ]);
-new GameDisplay();
+window.game = new GameDisplay();
 })();
