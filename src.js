@@ -549,7 +549,6 @@
             }
             //Draw pieces
             this.canvas.ctx.lineWidth = ~~(PIECE_RAD / 3);
-            this.canvas.setDrawColor("#fff");
             for (let i = 0; i < GameLogic.BOARD_SIZE; i++) {
                 for (let j = 0; j < GameLogic.BOARD_SIZE; j++) {
                     const circleX = LEFT_OFFSET + i * SIZE / BOARD_SIZE;
