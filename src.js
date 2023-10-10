@@ -503,6 +503,7 @@
     class Pair {
         constructor(first, second) { this.first = first; this.second = second; }
     }
+    var lastMove = null;
     class GameDisplay {
         static BLACK_IMAGE = document.getElementById('black-png')
         static WHITE_IMAGE = document.getElementById('white-png')
@@ -538,6 +539,7 @@
 
             this.canvas.drawImageOnRect(GameDisplay.BOARD_IMAGE, LEFT_OFFSET, TOP_OFFSET, LEFT_OFFSET + SIZE, TOP_OFFSET + SIZE);
 
+            this.canvas.ctx.lineWidth = 2;
             this.canvas.setDrawColor("#000");
             //Draw grid
             for (let i = 0; i < BOARD_SIZE; i++) {
@@ -546,6 +548,8 @@
                 this.canvas.line(LEFT_OFFSET + offset + PIECE_RAD, TOP_OFFSET + PIECE_RAD, LEFT_OFFSET + offset + PIECE_RAD, HEIGHT - TOP_OFFSET - PIECE_RAD);
             }
             //Draw pieces
+            this.canvas.ctx.lineWidth = ~~(PIECE_RAD / 3);
+            this.canvas.setDrawColor("#fff");
             for (let i = 0; i < GameLogic.BOARD_SIZE; i++) {
                 for (let j = 0; j < GameLogic.BOARD_SIZE; j++) {
                     const circleX = LEFT_OFFSET + i * SIZE / BOARD_SIZE;
@@ -566,6 +570,9 @@
                                 circleX + 2 * PIECE_RAD,
                                 circleY + 2 * PIECE_RAD
                             )
+                            if(lastMove !== null && lastMove[0] == i && lastMove[1] == j) {
+                                this.canvas.drawCircle(circleX + PIECE_RAD, circleY + PIECE_RAD, PIECE_RAD / 2, PIECE_RAD / 2);
+                            }
                             break;
                     }
                 }
@@ -740,6 +747,7 @@
                 }
             //Find a random move out of the best moves
             var move = bestMoves[~~(Math.random() * bestMoves.length)];
+            lastMove = move;
             //Carry out the move
             this.logic.setPieceAt(this, move.first, move.second, BOARD_CELL.OPPONENT);
         }
