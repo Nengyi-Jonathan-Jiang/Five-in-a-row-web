@@ -1,5 +1,4 @@
-(function(){
-    "use strict";
+(function () {
     "use strict";
     class Canvas {
         /**
@@ -500,288 +499,305 @@
             requestAnimationFrame(f2);
         }
     }
-class Pair {
-    constructor(first, second) { this.first = first; this.second = second; }
-}
-class GameDisplay {
-    constructor() {
-        this.SIZE = 800;
-        this.LEFT_OFFSET = 0;
-        this.TOP_OFFSET = 0;
-        this.logic = new GameLogic(this);
-        this.canvas = new Canvas(0, 0, document.body);
-        this.canvas.canvas.onclick = e => this.onMouseDown(e.clientX, e.clientY);
-        window.onkeypress = e => this.onKeyPressed(e.keyCode);
-        window.onresize = _ =>{
-            this.canvas.resizeToWindow();
-            document.body.style.setProperty('--width' ,this.canvas.width  + "px");
-            document.body.style.setProperty('--height',this.canvas.height + "px");
-        };
-        window.onresize();
 
-        Canvas.createAnimation(_ => this.paint());
+    class Pair {
+        constructor(first, second) { this.first = first; this.second = second; }
     }
-    //Called every time the display needs to update
-    paint() {
-        //Recalculate dimensions
-        const WIDTH = this.canvas.width, HEIGHT = this.canvas.height;
-        const SIZE = this.SIZE = Math.min(WIDTH, HEIGHT);
-        const LEFT_OFFSET = this.LEFT_OFFSET = (WIDTH - SIZE) >> 1, TOP_OFFSET = this.TOP_OFFSET = (HEIGHT - SIZE) >> 1;
-        const BOARD_SIZE = GameLogic.BOARD_SIZE;
-        const PIECE_RAD = ~~(SIZE / BOARD_SIZE / 2);
-        //Paint board background
-        this.canvas.clear("#000");
-        this.canvas.setFillColor("rgb(200,200,200)");
-        this.canvas.fillRect(LEFT_OFFSET, TOP_OFFSET, LEFT_OFFSET + SIZE, TOP_OFFSET + SIZE);
-        this.canvas.setDrawColor("#000");
-        //Draw grid
-        for (let i = 0; i <= BOARD_SIZE; i++) {
-            const offset = i * SIZE / BOARD_SIZE;
-            this.canvas.line(LEFT_OFFSET, TOP_OFFSET + offset, WIDTH - LEFT_OFFSET, TOP_OFFSET + offset);
-            this.canvas.line(LEFT_OFFSET + offset, TOP_OFFSET, LEFT_OFFSET + offset, HEIGHT - TOP_OFFSET);
+    class GameDisplay {
+        static BLACK_IMAGE = document.getElementById('black-png')
+        static WHITE_IMAGE = document.getElementById('white-png')
+        static BOARD_IMAGE = document.getElementById('board-png')
+
+        constructor() {
+            this.SIZE = 800;
+            this.LEFT_OFFSET = 0;
+            this.TOP_OFFSET = 0;
+            this.logic = new GameLogic(this);
+            this.canvas = new Canvas(0, 0, document.body);
+            this.canvas.canvas.onclick = e => this.onMouseDown(e.clientX, e.clientY);
+            window.onkeypress = e => this.onKeyPressed(e.keyCode);
+            window.onresize = _ => {
+                this.canvas.resizeToWindow();
+                document.body.style.setProperty('--width', this.canvas.width + "px");
+                document.body.style.setProperty('--height', this.canvas.height + "px");
+            };
+            window.onresize();
+
+            Canvas.createAnimation(_ => this.paint());
         }
-        const PADDING = ~~(SIZE / BOARD_SIZE / 9);
-        //Draw pieces
-        for (let i = 0; i < GameLogic.BOARD_SIZE; i++) {
-            for (let j = 0; j < GameLogic.BOARD_SIZE; j++) {
-                const circleX = LEFT_OFFSET + i * SIZE / BOARD_SIZE;
-                const circleY = TOP_OFFSET + j * SIZE / BOARD_SIZE;
-                switch (this.logic.getPieceAt(i, j)) {
-                    case BOARD_CELL.PLAYER:
-                        this.canvas.circle(circleX + PIECE_RAD, circleY + PIECE_RAD, PIECE_RAD - PADDING);
-                        break;
-                    case BOARD_CELL.OPPONENT:
-                        this.canvas.fillCircle(circleX + PIECE_RAD, circleY + PIECE_RAD, PIECE_RAD - PADDING);
-                        break;
+        //Called every time the display needs to update
+        paint() {
+            //Recalculate dimensions
+            const WIDTH = this.canvas.width, HEIGHT = this.canvas.height;
+            const SIZE = this.SIZE = Math.min(WIDTH, HEIGHT);
+            const LEFT_OFFSET = this.LEFT_OFFSET = (WIDTH - SIZE) >> 1, TOP_OFFSET = this.TOP_OFFSET = (HEIGHT - SIZE) >> 1;
+            const BOARD_SIZE = GameLogic.BOARD_SIZE;
+            const PIECE_RAD = ~~(SIZE / BOARD_SIZE / 2);
+            //Paint board background
+            this.canvas.clear("#000");
+
+            this.canvas.drawImageOnRect(GameDisplay.BOARD_IMAGE, LEFT_OFFSET, TOP_OFFSET, LEFT_OFFSET + SIZE, TOP_OFFSET + SIZE);
+
+            this.canvas.setDrawColor("#000");
+            //Draw grid
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const offset = i * SIZE / BOARD_SIZE;
+                this.canvas.line(LEFT_OFFSET + PIECE_RAD, TOP_OFFSET + offset + PIECE_RAD, WIDTH - LEFT_OFFSET - PIECE_RAD, TOP_OFFSET + offset + PIECE_RAD);
+                this.canvas.line(LEFT_OFFSET + offset + PIECE_RAD, TOP_OFFSET + PIECE_RAD, LEFT_OFFSET + offset + PIECE_RAD, HEIGHT - TOP_OFFSET - PIECE_RAD);
+            }
+            //Draw pieces
+            for (let i = 0; i < GameLogic.BOARD_SIZE; i++) {
+                for (let j = 0; j < GameLogic.BOARD_SIZE; j++) {
+                    const circleX = LEFT_OFFSET + i * SIZE / BOARD_SIZE;
+                    const circleY = TOP_OFFSET + j * SIZE / BOARD_SIZE;
+                    switch (this.logic.getPieceAt(i, j)) {
+                        case BOARD_CELL.PLAYER:
+                            this.canvas.drawImageOnRect(GameDisplay.BLACK_IMAGE, 
+                                circleX, 
+                                circleY, 
+                                circleX + 2 * PIECE_RAD,
+                                circleY + 2 * PIECE_RAD
+                            );
+                            break;
+                        case BOARD_CELL.OPPONENT:
+                            this.canvas.drawImageOnRect(GameDisplay.WHITE_IMAGE, 
+                                circleX, 
+                                circleY, 
+                                circleX + 2 * PIECE_RAD,
+                                circleY + 2 * PIECE_RAD
+                            )
+                            break;
+                    }
                 }
             }
         }
-    }
-    onWin() {
-        document.getElementById("game-result").dataset.result = "win";
-        document.getElementById("game-result").onclick = (e =>{if(e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard()});
-    }
-    onLose() {
-        document.getElementById("game-result").dataset.result = "lose";
-        document.getElementById("game-result").onclick = (e =>{if(e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard()});
-    }
-    onDraw() {
-        document.getElementById("game-result").dataset.result = "draw";
-        document.getElementById("game-result").onclick = (e =>{if(e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard()});
-    }
-    onKeyPressed(keyCode) {
-        this.logic.onKey(keyCode);
-    }
-    onMouseDown(x, y) {
-        this.logic.click(~~(GameLogic.BOARD_SIZE * (x - this.LEFT_OFFSET) / this.SIZE), ~~(GameLogic.BOARD_SIZE * (y - this.TOP_OFFSET) / this.SIZE));
-    }
-}
-var BOARD_CELL;
-(function (BOARD_CELL) {
-    BOARD_CELL[BOARD_CELL["EMPTY"] = 0] = "EMPTY";
-    BOARD_CELL[BOARD_CELL["PLAYER"] = 1] = "PLAYER";
-    BOARD_CELL[BOARD_CELL["OPPONENT"] = 2] = "OPPONENT";
-})(BOARD_CELL || (BOARD_CELL = {}));
-class GameLogic {
-    constructor(disp) {
-        this.opponent = new ComputerOpponent(this);
-        this.display = disp;
-        this.resetBoard();
-    }
-    static get BOARD_SIZE() { return 13; }
-    ;
-    onKey(keycode) {
-        if (keycode == 82)
-            this.resetBoard(); //If r pressed, reset game
-    }
-    click(x, y) {
-        if (x < 0 || x >= GameLogic.BOARD_SIZE || y < 0 || y >= GameLogic.BOARD_SIZE || this.board[x][y] != BOARD_CELL.EMPTY)
-            return;
-        this.playerMove(x, y);
-    }
-    playerMove(x, y) {
-        this.board[x][y] = BOARD_CELL.PLAYER;
-        this.display.paint();
-        switch (this.gameWon()) {
-            case 1:
-                this.display.onWin();
-                break;
-            case 3:
-                this.display.onDraw();
-                break;
+        onWin() {
+            document.getElementById("game-result").dataset.result = "win";
+            document.getElementById("game-result").onclick = (e => { if (e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard() });
         }
-        this.opponentMove();
-    }
-    opponentMove() {
-        this.opponent.move();
-        this.display.paint();
-        switch (this.gameWon()) {
-            case 2:
-                this.display.onLose();
-                break;
-            case 3:
-                this.display.onDraw();
-                break;
+        onLose() {
+            document.getElementById("game-result").dataset.result = "lose";
+            document.getElementById("game-result").onclick = (e => { if (e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard() });
+        }
+        onDraw() {
+            document.getElementById("game-result").dataset.result = "draw";
+            document.getElementById("game-result").onclick = (e => { if (e.target instanceof HTMLElement) e.target.dataset.result = "null"; this.logic.resetBoard() });
+        }
+        onKeyPressed(keyCode) {
+            this.logic.onKey(keyCode);
+        }
+        onMouseDown(x, y) {
+            this.logic.click(~~(GameLogic.BOARD_SIZE * (x - this.LEFT_OFFSET) / this.SIZE), ~~(GameLogic.BOARD_SIZE * (y - this.TOP_OFFSET) / this.SIZE));
         }
     }
-    resetBoard() {
-        this.board = new Array(GameLogic.BOARD_SIZE).fill(0).map(i => new Array(GameLogic.BOARD_SIZE).fill(BOARD_CELL.EMPTY));
-    }
-    gameWon() {
-        return /.*XXXXX.*/.test(this.getRows())
-            || /.*XXXXX.*/.test(this.getCols())
-            || /.*XXXXX.*/.test(this.getDiagonals(false))
-            || /.*XXXXX.*/.test(this.getDiagonals(true))
-            ? 1 : /.*OOOOO.*/.test(this.getRows())
-            || /.*OOOOO.*/.test(this.getCols())
-            || /.*OOOOO.*/.test(this.getDiagonals(false))
-            || /.*OOOOO.*/.test(this.getDiagonals(true))
-            ? 2 : this.isFull() ? 3 : 0;
-    }
-    getPieceAt(x, y) { return this.board[x][y]; }
-    hasPieceAt(x, y) { return this.board[x][y] != BOARD_CELL.EMPTY; }
-    setPieceAt(o, x, y, val) { if (o == this.opponent)
-        this.board[x][y] = val; }
-    isEmpty() {
-        for (let i of this.board)
-            for (let j of i)
-                if (j != BOARD_CELL.EMPTY)
-                    return false;
-        return true;
-    }
-    isFull() {
-        for (let i of this.board)
-            for (let j of i)
-                if (j == BOARD_CELL.EMPTY)
-                    return false;
-        return true;
-    }
-    getDiagonals(direction) {
-        let res = "", i, j, x, y, l = GameLogic.BOARD_SIZE;
-        for (i = l - 1; i > 0; i--) {
-            for (j = 0, x = i; x < l; j++, x++)
-                res += GameLogic.m.get(this.board[direction ? l - x - 1 : x][j]);
-            res += "|";
+    var BOARD_CELL;
+    (function (BOARD_CELL) {
+        BOARD_CELL[BOARD_CELL["EMPTY"] = 0] = "EMPTY";
+        BOARD_CELL[BOARD_CELL["PLAYER"] = 1] = "PLAYER";
+        BOARD_CELL[BOARD_CELL["OPPONENT"] = 2] = "OPPONENT";
+    })(BOARD_CELL || (BOARD_CELL = {}));
+    class GameLogic {
+        constructor(disp) {
+            this.opponent = new ComputerOpponent(this);
+            this.display = disp;
+            this.resetBoard();
         }
-        for (i = 0; i < l; i++) {
-            for (j = 0, y = i; y < l; j++, y++)
-                res += GameLogic.m.get(this.board[direction ? l - j - 1 : j][y]);
-            res += "|";
+        static get BOARD_SIZE() { return 13; }
+        ;
+        onKey(keycode) {
+            if (keycode == 82)
+                this.resetBoard(); //If r pressed, reset game
         }
-        return res;
-    }
-    getRows() {
-        let res = "", i, j, l = GameLogic.BOARD_SIZE;
-        for (i = 0; i < l; i++) {
-            for (j = 0; j < l; j++)
-                res += GameLogic.m.get(this.board[i][j]);
-            res += '|';
+        click(x, y) {
+            if (x < 0 || x >= GameLogic.BOARD_SIZE || y < 0 || y >= GameLogic.BOARD_SIZE || this.board[x][y] != BOARD_CELL.EMPTY)
+                return;
+            this.playerMove(x, y);
         }
-        return res.toString();
-    }
-    getCols() {
-        let res = "", i, j, l = GameLogic.BOARD_SIZE;
-        for (i = 0; i < l; i++) {
-            for (j = 0; j < l; j++)
-                res += GameLogic.m.get(this.board[j][i]);
-            res += '|';
-        }
-        return res;
-    }
-}
-GameLogic.m = new Map([[BOARD_CELL.EMPTY, "_"], [BOARD_CELL.PLAYER, "X"], [BOARD_CELL.OPPONENT, "O"]]);
-class ComputerOpponent {
-    constructor(logic) { this.logic = logic; }
-    move() {
-        const l = GameLogic.BOARD_SIZE;
-        //If board is empty, go in middle space
-        if (this.logic.isEmpty()) {
-            this.logic.setPieceAt(this, l / 2, l / 2, BOARD_CELL.OPPONENT);
-            return;
-        }
-        //Store best moves & score so far
-        let bestMoves = [];
-        let bestScore = Number.NEGATIVE_INFINITY;
-        //For every empty space on the board
-        for (let i = 0; i < l; i++)
-            for (let j = 0; j < l; j++) {
-                if (this.logic.hasPieceAt(i, j))
-                    continue;
-                //Set the space to 2 for now
-                this.logic.setPieceAt(this, i, j, BOARD_CELL.OPPONENT);
-                //See how advantageous the board is
-                let score = this.score();
-                //If it is better than the current best board(s), set it to the new best board
-                if (score > bestScore) {
-                    bestMoves = [new Pair(i, j)];
-                    bestScore = score;
-                }
-                //Otherwise, if it's just as good as the best board(s), add it the set of best boards
-                else if (score == bestScore)
-                    bestMoves.push(new Pair(i, j));
-                //Reset the space to 0
-                this.logic.setPieceAt(this, i, j, BOARD_CELL.EMPTY);
+        playerMove(x, y) {
+            this.board[x][y] = BOARD_CELL.PLAYER;
+            this.display.paint();
+            switch (this.gameWon()) {
+                case 1:
+                    this.display.onWin();
+                    break;
+                case 3:
+                    this.display.onDraw();
+                    break;
             }
-        //Find a random move out of the best moves
-        var move = bestMoves[~~(Math.random() * bestMoves.length)];
-        //Carry out the move
-        this.logic.setPieceAt(this, move.first, move.second, BOARD_CELL.OPPONENT);
-    }
-    //Find out how advantageous a given board configuration is
-    score() {
-        let score = 0;
-        //All rows/columns/diagonals of the board, converted to a string and joined with '|'s
-        let s = this.logic.getRows() + this.logic.getCols() + this.logic.getDiagonals(true) + this.logic.getDiagonals(false);
-        //For each regex
-        for (let a of ComputerOpponent.SCORING_MAP.entries()) {
-            //Multiply by score per match * number of matches
-            score += (s.match(a[0]) || { length: 0 }).length * a[1];
+            this.opponentMove();
         }
-        //Return total score
-        return score;
+        opponentMove() {
+            this.opponent.move();
+            this.display.paint();
+            switch (this.gameWon()) {
+                case 2:
+                    this.display.onLose();
+                    break;
+                case 3:
+                    this.display.onDraw();
+                    break;
+            }
+        }
+        resetBoard() {
+            this.board = new Array(GameLogic.BOARD_SIZE).fill(0).map(i => new Array(GameLogic.BOARD_SIZE).fill(BOARD_CELL.EMPTY));
+        }
+        gameWon() {
+            return /.*XXXXX.*/.test(this.getRows())
+                || /.*XXXXX.*/.test(this.getCols())
+                || /.*XXXXX.*/.test(this.getDiagonals(false))
+                || /.*XXXXX.*/.test(this.getDiagonals(true))
+                ? 1 : /.*OOOOO.*/.test(this.getRows())
+                    || /.*OOOOO.*/.test(this.getCols())
+                    || /.*OOOOO.*/.test(this.getDiagonals(false))
+                    || /.*OOOOO.*/.test(this.getDiagonals(true))
+                    ? 2 : this.isFull() ? 3 : 0;
+        }
+        getPieceAt(x, y) { return this.board[x][y]; }
+        hasPieceAt(x, y) { return this.board[x][y] != BOARD_CELL.EMPTY; }
+        setPieceAt(o, x, y, val) {
+            if (o == this.opponent)
+                this.board[x][y] = val;
+        }
+        isEmpty() {
+            for (let i of this.board)
+                for (let j of i)
+                    if (j != BOARD_CELL.EMPTY)
+                        return false;
+            return true;
+        }
+        isFull() {
+            for (let i of this.board)
+                for (let j of i)
+                    if (j == BOARD_CELL.EMPTY)
+                        return false;
+            return true;
+        }
+        getDiagonals(direction) {
+            let res = "", i, j, x, y, l = GameLogic.BOARD_SIZE;
+            for (i = l - 1; i > 0; i--) {
+                for (j = 0, x = i; x < l; j++, x++)
+                    res += GameLogic.m.get(this.board[direction ? l - x - 1 : x][j]);
+                res += "|";
+            }
+            for (i = 0; i < l; i++) {
+                for (j = 0, y = i; y < l; j++, y++)
+                    res += GameLogic.m.get(this.board[direction ? l - j - 1 : j][y]);
+                res += "|";
+            }
+            return res;
+        }
+        getRows() {
+            let res = "", i, j, l = GameLogic.BOARD_SIZE;
+            for (i = 0; i < l; i++) {
+                for (j = 0; j < l; j++)
+                    res += GameLogic.m.get(this.board[i][j]);
+                res += '|';
+            }
+            return res.toString();
+        }
+        getCols() {
+            let res = "", i, j, l = GameLogic.BOARD_SIZE;
+            for (i = 0; i < l; i++) {
+                for (j = 0; j < l; j++)
+                    res += GameLogic.m.get(this.board[j][i]);
+                res += '|';
+            }
+            return res;
+        }
     }
-}
-ComputerOpponent.SCORING_MAP = new Map([
-    //Guaranteed win for computer immediately
-    [/OOOOO/g, 1000000000],
-    //Guaranteed win for player in 1 moves
-    [/XXXX_/g, -100000000],
-    [/XXX_X/g, -100000000],
-    [/XX_XX/g, -100000000],
-    [/X_XXX/g, -100000000],
-    [/_XXXX/g, -100000000],
-    //Guaranteed win for computer in 2 moves
-    [/_OOOO_/g, 20000000],
-    //Possible win for computer in 2 moves
-    [/OOO_O/g, 10000000],
-    [/OO_OO/g, 10000000],
-    [/O_OOO/g, 10000000],
-    [/_OOOO/g, 10000000],
-    //Possible win for player in 3 moves
-    [/_XXX__/g, -1000000],
-    [/__XXX_/g, -1000000],
-    [/_XX_X_/g, -1000000],
-    [/_X_XX_/g, -1000000],
-    [/_XXX_/g, -500000],
-    //Possible win for computer in 4 moves
-    [/_OOO__/g, 100000],
-    [/__OOO_/g, 100000],
-    [/_OO_O_/g, 100000],
-    [/_O_OO_/g, 100000],
-    [/_OOO_/g, 50000],
-    //Good moves for computer
-    [/__OO__/g, 1200],
-    [/_OO__/g, 1000],
-    [/__OO_/g, 1000],
-    [/XXO_/g, 500],
-    [/_OXX/g, 500],
-    //Barely disatvantageous situations for computer
-    [/__XX_/g, -1100],
-    [/_XX__/g, -1100],
-    [/OXO/g, -100],
-    //Don't go in random places
-    [/OX/g, 1],
-    [/XO/g, 1]
-]);
-window.game = new GameDisplay();
+    GameLogic.m = new Map([[BOARD_CELL.EMPTY, "_"], [BOARD_CELL.PLAYER, "X"], [BOARD_CELL.OPPONENT, "O"]]);
+    class ComputerOpponent {
+        constructor(logic) { this.logic = logic; }
+        move() {
+            const l = GameLogic.BOARD_SIZE;
+            //If board is empty, go in middle space
+            if (this.logic.isEmpty()) {
+                this.logic.setPieceAt(this, l / 2, l / 2, BOARD_CELL.OPPONENT);
+                return;
+            }
+            //Store best moves & score so far
+            let bestMoves = [];
+            let bestScore = Number.NEGATIVE_INFINITY;
+            //For every empty space on the board
+            for (let i = 0; i < l; i++)
+                for (let j = 0; j < l; j++) {
+                    if (this.logic.hasPieceAt(i, j))
+                        continue;
+                    //Set the space to 2 for now
+                    this.logic.setPieceAt(this, i, j, BOARD_CELL.OPPONENT);
+                    //See how advantageous the board is
+                    let score = this.score();
+                    //If it is better than the current best board(s), set it to the new best board
+                    if (score > bestScore) {
+                        bestMoves = [new Pair(i, j)];
+                        bestScore = score;
+                    }
+                    //Otherwise, if it's just as good as the best board(s), add it the set of best boards
+                    else if (score == bestScore)
+                        bestMoves.push(new Pair(i, j));
+                    //Reset the space to 0
+                    this.logic.setPieceAt(this, i, j, BOARD_CELL.EMPTY);
+                }
+            //Find a random move out of the best moves
+            var move = bestMoves[~~(Math.random() * bestMoves.length)];
+            //Carry out the move
+            this.logic.setPieceAt(this, move.first, move.second, BOARD_CELL.OPPONENT);
+        }
+        //Find out how advantageous a given board configuration is
+        score() {
+            let score = 0;
+            //All rows/columns/diagonals of the board, converted to a string and joined with '|'s
+            let s = this.logic.getRows() + this.logic.getCols() + this.logic.getDiagonals(true) + this.logic.getDiagonals(false);
+            //For each regex
+            for (let a of ComputerOpponent.SCORING_MAP.entries()) {
+                //Multiply by score per match * number of matches
+                score += (s.match(a[0]) || { length: 0 }).length * a[1];
+            }
+            //Return total score
+            return score;
+        }
+    }
+    ComputerOpponent.SCORING_MAP = new Map([
+        //Guaranteed win for computer immediately
+        [/OOOOO/g, 1000000000],
+        //Guaranteed win for player in 1 moves
+        [/XXXX_/g, -100000000],
+        [/XXX_X/g, -100000000],
+        [/XX_XX/g, -100000000],
+        [/X_XXX/g, -100000000],
+        [/_XXXX/g, -100000000],
+        //Guaranteed win for computer in 2 moves
+        [/_OOOO_/g, 20000000],
+        //Possible win for computer in 2 moves
+        [/OOO_O/g, 10000000],
+        [/OO_OO/g, 10000000],
+        [/O_OOO/g, 10000000],
+        [/_OOOO/g, 10000000],
+        //Possible win for player in 3 moves
+        [/_XXX__/g, -1000000],
+        [/__XXX_/g, -1000000],
+        [/_XX_X_/g, -1000000],
+        [/_X_XX_/g, -1000000],
+        [/_XXX_/g, -500000],
+        //Possible win for computer in 4 moves
+        [/_OOO__/g, 100000],
+        [/__OOO_/g, 100000],
+        [/_OO_O_/g, 100000],
+        [/_O_OO_/g, 100000],
+        [/_OOO_/g, 50000],
+        //Good moves for computer
+        [/__OO__/g, 1200],
+        [/_OO__/g, 1000],
+        [/__OO_/g, 1000],
+        [/XXO_/g, 500],
+        [/_OXX/g, 500],
+        //Barely disatvantageous situations for computer
+        [/__XX_/g, -1100],
+        [/_XX__/g, -1100],
+        [/OXO/g, -100],
+        //Don't go in random places
+        [/OX/g, 1],
+        [/XO/g, 1]
+    ]);
+    window.game = new GameDisplay();
 })();
