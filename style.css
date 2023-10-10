@@ -18,6 +18,6 @@ div#game-result[data-result="win" ]{background-color:#8F88;}
 div#game-result[data-result="lose"]{background-color:#F888;}
 div#game-result[data-result="draw"]{background-color:#8888;}
 
-div#game-result[data-result="win" ]::after{content:"YOU WIN";}
-div#game-result[data-result="lose"]::after{content:"YOU LOSE";}
-div#game-result[data-result="draw"]::after{content:"DRAW";}
+div#game-result[data-result="win" ]::after{content:"你赢了";}
+div#game-result[data-result="lose"]::after{content:"你输了";}
+div#game-result[data-result="draw"]::after{content:"平局";}
