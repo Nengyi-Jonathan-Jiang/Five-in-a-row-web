@@ -9,13 +9,18 @@ div#game-result{
 	color:white;
 	font-family:monospace;
 	font-size: calc(min(var(--width) * .05,var(--height) * .05));
-	text-align:center;
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-shadow: black 0 0 5px;
+	text-align: center;
 }
 
 div#game-result[data-result="null"]{display:none;}
 
-div#game-result[data-result="win" ]{background-color:#8F88;}
-div#game-result[data-result="lose"]{background-color:#F888;}
+div#game-result[data-result="win" ]{background-color:#0f66;}
+div#game-result[data-result="lose"]{background-color:#F868;}
 div#game-result[data-result="draw"]{background-color:#8888;}
 
 div#game-result[data-result="win" ]::after{content:"你赢了";}
